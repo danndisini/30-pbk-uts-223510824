@@ -6,100 +6,50 @@
     </header>
 
     <div v-if="activeView === 'todos'">
-      <h1>Daftar Kegiatan</h1>
-      <form @submit.prevent="tambahfi">
-        <input type="text" v-model="kegiatanbaru.name" placeholder="Tambah Kegiatan Baru">
-        <input type="date" v-model="kegiatanbaru.date">
-        <button type="submit">Tambah</button>
-      </form>
-      <div>
-        <button @click="filterr('semua')">Semua</button>
-        <button @click="filterr('belum')">Belum Selesai</button>
-        <button @click="filterr('selesai')">Selesai</button>
-      </div>
-      <br>
-      <table>
-        <thead>
-          <tr>
-            <th>No</th>
-            <th>Nama Kegiatan</th>
-            <th>Status</th>
-            <th>Tanggal</th>
-            <th>Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(kegiatan, index) in terfilter" :key="index">
-            <td>{{ index + 1 }}</td>
-            <td :class="{ selesai: kegiatan.selesai }">{{ kegiatan.name }}</td>
-            <td>
-              <input type="checkbox" @change="toggle(index)" :checked="kegiatan.selesai">
-            </td>
-            <td>{{ kegiatan.date }}</td>
-            <td>
-              <button @click="hapus(index)">Hapus</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <Todos
+        :activities="activities"
+        @add-activity="tambahfi"
+        @remove-activity="hapus"
+        @toggle-activity="toggle"
+      />
     </div>
 
     <div v-if="activeView === 'posts'">
-      <h1>Post</h1>
-      <div>
-        <label for="user-select">Pilih User:</label>
-        <select id="user-select" v-model="selectedUserId" @change="fetchPosts">
-          <option value="">Semua</option>
-          <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }}</option>
-        </select>
-      </div>
-      <ul>
-        <li v-for="post in filteredPosts" :key="post.id">
-          <h3>{{ post.title }}</h3>
-          <p>{{ post.body }}</p>
-          <p><strong>User:</strong> {{ getUserById(post.userId).name }}</p>
-        </li>
-      </ul>
+      <Posts
+        :users="users"
+        :posts="posts"
+        @fetch-posts="fetchPosts"
+      />
     </div>
   </div>
 </template>
 
 <script>
+import Todos from './components/Todos.vue'
+import Posts from './components/Posts.vue'
+
 export default {
+  components: {
+    Todos,
+    Posts
+  },
   data() {
     return {
       activities: [],
-      kegiatanbaru: {
-        name: '',
-        date: ''
-      },
-      filter: 'semua',
       activeView: 'todos',
       users: [],
-      posts: [],
-      selectedUserId: ''
+      posts: []
     }
   },
   methods: {
-    tambahfi() {
-      if (this.kegiatanbaru.name.trim() !== '' && this.kegiatanbaru.date !== '') {
-        this.activities.push({ 
-          name: this.kegiatanbaru.name,
-          date: this.kegiatanbaru.date,
-          selesai: false 
-        });
-        this.kegiatanbaru.name = '';
-        this.kegiatanbaru.date = '';
-      }
+    tambahfi(activity) {
+      this.activities.push(activity);
     },
     hapus(index) {
       this.activities.splice(index, 1);
     },
     toggle(index) {
       this.activities[index].selesai = !this.activities[index].selesai;
-    },
-    filterr(filterType) {
-      this.filter = filterType;
     },
     setActiveView(view) {
       this.activeView = view;
@@ -114,33 +64,16 @@ export default {
           this.users = data;
         });
     },
-    fetchPosts() {
+    fetchPosts(userId) {
       let url = 'https://jsonplaceholder.typicode.com/posts';
-      if (this.selectedUserId) {
-        url += `?userId=${this.selectedUserId}`;
+      if (userId) {
+        url += `?userId=${userId}`;
       }
       fetch(url)
         .then(response => response.json())
         .then(data => {
           this.posts = data;
         });
-    },
-    getUserById(userId) {
-      return this.users.find(user => user.id === userId) || {};
-    }
-  },
-  computed: {
-    terfilter() {
-      if (this.filter === 'semua') {
-        return this.activities;
-      } else if (this.filter === 'belum') {
-        return this.activities.filter(kegiatan => !kegiatan.selesai);
-      } else if (this.filter === 'selesai') {
-        return this.activities.filter(kegiatan => kegiatan.selesai);
-      }
-    },
-    filteredPosts() {
-      return this.posts;
     }
   }
 }
@@ -228,4 +161,6 @@ li h3 {
 li p {
   margin: 5px 0;
 }
+
+
 </style>
